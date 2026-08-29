@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - ".mirror/full-transfer.trigger"
+      - "TRANSFER_TRIGGER.txt"
 
 permissions:
   contents: write
