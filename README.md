@@ -1,10 +1,11 @@
 # Qwen3.6-27B official mirror
 
-This repository is a byte-preserving archival mirror of the official Qwen3.6-27B open-weight distribution and its Qwen-team release source/documentation.
+This repository is a byte-preserving archival mirror of the official Qwen3.6-27B open-weight distributions (BF16 and Qwen's official FP8 quantization) and the Qwen-team release source/documentation.
 
 ## Canonical upstreams
 
-- Model: https://huggingface.co/Qwen/Qwen3.6-27B
+- Model (BF16): https://huggingface.co/Qwen/Qwen3.6-27B
+- Model (official FP8): https://huggingface.co/Qwen/Qwen3.6-27B-FP8
 - Official Qwen GitHub release lineage: https://github.com/QwenLM/Qwen3.8
 - Qwen3.6-27B release commit: `f1443092c29978643fd041ebe959676259e934f1`
 
