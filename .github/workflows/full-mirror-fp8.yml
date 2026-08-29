@@ -130,7 +130,7 @@ jobs:
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG"               --target "${{ github.sha }}"               --title "Qwen3.6-27B-FP8 upstream mirror ${REVISION:0:12}"               --notes "Full byte-preserving mirror of Qwen/Qwen3.6-27B at revision $REVISION. Large upstream files are split into <1.9 GB assets. Official LICENSE is included."
+            gh release create "$TAG"               --target "${{ github.sha }}"               --title "Qwen3.6-27B-FP8 upstream mirror ${REVISION:0:12}"               --notes "Full byte-preserving mirror of Qwen/Qwen3.6-27B-FP8 at revision $REVISION. Large upstream files are split into <1.9 GB assets. Official LICENSE is included."
           fi
 
       - name: Upload pinned upstream metadata
