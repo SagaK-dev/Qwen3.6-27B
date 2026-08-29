@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-08-29T02:27:00Z",
+  "checked_at_utc": "2026-08-29T02:29:00Z",
   "official_source": {
     "repository": "QwenLM/Qwen3.8",
     "historical_name": "QwenLM/Qwen3.6",
@@ -31,7 +31,10 @@
       "safetensors_files": 66,
       "reported_bytes": 30890040900,
       "license": "Apache-2.0",
-      "transfer": "started"
+      "transfer": "in_progress",
+      "completed_mirror_jobs": 34,
+      "total_mirror_jobs": 79,
+      "github_release_bytes_present": 10668000000
     }
   }
 }
