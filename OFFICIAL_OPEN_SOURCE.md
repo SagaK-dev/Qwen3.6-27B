@@ -39,3 +39,7 @@ Its complete repository tree at that commit is mirrored under:
 Official Apache-2.0 license text is preserved with the mirrored source and as an asset in the model Release.
 
 This mirror does not relicense Qwen's work. Upstream copyright and license terms remain in force.
+
+## Duplicate official hosting
+
+Qwen also publishes the same named model releases on ModelScope. This repository mirrors the canonical unique model artifacts from the official Qwen Hugging Face repositories rather than storing a second duplicate byte-copy from ModelScope.
