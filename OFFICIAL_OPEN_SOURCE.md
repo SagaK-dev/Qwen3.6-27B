@@ -14,7 +14,16 @@ This repository mirrors the unique official Qwen3.6-27B open-source/open-weight 
 - Every original path and size is recorded in `upstream-metadata.json`.
 - Upstream SHA-256 values are recorded and checked where Hugging Face exposes them.
 
-## 2. Official Qwen source/documentation at Qwen3.6-27B release
+## 2. Official FP8 model distribution
+
+- Upstream: `Qwen/Qwen3.6-27B-FP8`
+- Canonical host: Hugging Face
+- License: Apache-2.0
+- Type: Qwen's official fine-grained FP8 quantization of Qwen3.6-27B
+- All model/configuration/tokenizer/model-card/LICENSE files are included in the mirror scope.
+- Completion records are written under `official-models/Qwen3.6-27B-FP8/` after verification.
+
+## 3. Official Qwen source/documentation at Qwen3.6-27B release
 
 The former `QwenLM/Qwen3.6` repository was later renamed/evolved to `QwenLM/Qwen3.8`.
 The Qwen3.6-27B release commit is pinned at:
