@@ -1,0 +1,18 @@
+{
+  "license_present": true,
+  "model_id": "Qwen/Qwen3.6-27B",
+  "release_asset_count": 86,
+  "revision": "6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+  "sha256_checked_files": 16,
+  "status": "complete",
+  "upstream_file_count": 29,
+  "upstream_metadata_present": true,
+  "verification": {
+    "all_upstream_paths_present": true,
+    "release_part_sizes_match": true,
+    "upstream_sha256_checked_where_available": true
+  },
+  "verified_bytes": 55586107940,
+  "verified_file_count": 29,
+  "verified_part_count": 56
+}
