@@ -1,0 +1,293 @@
+name: Full Qwen3.6-27B mirror
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".mirror/full-transfer.trigger"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: qwen36-27b-full-mirror
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      revision: ${{ steps.meta.outputs.revision }}
+      matrix: ${{ steps.meta.outputs.matrix }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install metadata dependency
+        run: python -m pip install --upgrade huggingface_hub requests
+
+      - name: Resolve and pin upstream metadata
+        id: meta
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import time
+          from pathlib import Path
+
+          from huggingface_hub import HfApi
+
+          model_id = "Qwen/Qwen3.6-27B"
+          api = HfApi()
+          info = None
+          last_error = None
+
+          for attempt in range(1, 9):
+              try:
+                  info = api.model_info(model_id, files_metadata=True)
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  if attempt == 8:
+                      raise
+                  delay = min(60, 2 ** attempt)
+                  print(
+                      f"metadata request failed on attempt {attempt}; "
+                      f"retrying in {delay}s",
+                      flush=True,
+                  )
+                  time.sleep(delay)
+
+          if info is None:
+              raise last_error or RuntimeError("Unable to resolve metadata")
+
+          revision = info.sha
+          if not revision:
+              raise SystemExit("Unable to resolve upstream revision")
+
+          siblings = sorted(info.siblings or [], key=lambda item: item.rfilename)
+
+          def sha256_of(item):
+              lfs = getattr(item, "lfs", None)
+              if isinstance(lfs, dict):
+                  return lfs.get("sha256")
+              if lfs is not None:
+                  return getattr(lfs, "sha256", None)
+              return None
+
+          files = []
+          matrix = []
+          for index, item in enumerate(siblings):
+              record = {
+                  "index": index,
+                  "path": item.rfilename,
+                  "size": getattr(item, "size", None),
+                  "sha256": sha256_of(item),
+              }
+              files.append(record)
+
+              if item.rfilename != "LICENSE":
+                  matrix.append(
+                      {
+                          "index": index,
+                          "path": item.rfilename,
+                          "size": ""
+                          if record["size"] is None
+                          else str(record["size"]),
+                          "sha256": record["sha256"] or "",
+                      }
+                  )
+
+          if len(matrix) > 256:
+              raise SystemExit(
+                  f"Matrix would contain {len(matrix)} jobs; GitHub maximum is 256"
+              )
+
+          metadata = {
+              "model_id": model_id,
+              "revision": revision,
+              "files": files,
+          }
+          Path("upstream-metadata.json").write_text(
+              json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          print(f"revision={revision}")
+          print(f"tag=upstream-{revision[:12]}")
+          print("matrix=" + json.dumps(matrix, separators=(",", ":")))
+          PY
+
+      - name: Create pinned GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ steps.meta.outputs.revision }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG"               --target "${{ github.sha }}"               --title "Qwen3.6-27B upstream mirror ${REVISION:0:12}"               --notes "Full byte-preserving mirror of Qwen/Qwen3.6-27B at revision $REVISION. Large upstream files are split into <1.9 GB assets. Official LICENSE is included."
+          fi
+
+      - name: Upload pinned upstream metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if gh release upload "$TAG" upstream-metadata.json --clobber; then
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          exit 1
+
+      - name: Upload official upstream LICENSE
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ steps.meta.outputs.revision }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          from huggingface_hub import hf_hub_download
+
+          last_error = None
+          for attempt in range(1, 9):
+              try:
+                  path = hf_hub_download(
+                      repo_id="Qwen/Qwen3.6-27B",
+                      filename="LICENSE",
+                      revision=os.environ["REVISION"],
+                      local_dir="license-download",
+                  )
+                  print(path)
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  if attempt == 8:
+                      raise
+                  time.sleep(min(60, 2 ** attempt))
+          else:
+              raise last_error or RuntimeError("Unable to download LICENSE")
+          PY
+          cp license-download/LICENSE LICENSE
+          for attempt in 1 2 3 4 5 6; do
+            if gh release upload "$TAG" LICENSE --clobber; then
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          exit 1
+
+  mirror:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install mirror dependencies
+        run: python -m pip install --upgrade huggingface_hub requests
+
+      - name: Transfer pinned upstream file
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ needs.prepare.outputs.revision }}
+          INDEX: ${{ matrix.index }}
+          FILE_PATH: ${{ matrix.path }}
+          EXPECTED_SIZE: ${{ matrix.size }}
+          EXPECTED_SHA256: ${{ matrix.sha256 }}
+        shell: bash
+        run: |
+          args=(
+            --start "$INDEX"
+            --end "$INDEX"
+            --revision "$REVISION"
+            --skip-license
+            --path "$FILE_PATH"
+          )
+
+          if [[ -n "$EXPECTED_SIZE" ]]; then
+            args+=(--expected-size "$EXPECTED_SIZE")
+          fi
+          if [[ -n "$EXPECTED_SHA256" ]]; then
+            args+=(--expected-sha256 "$EXPECTED_SHA256")
+          fi
+
+          python scripts/mirror_release_assets.py "${args[@]}"
+
+  verify:
+    needs:
+      - prepare
+      - mirror
+    if: ${{ always() && needs.mirror.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download all per-file manifests and pinned metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          mkdir -p release-manifests
+          gh release download "$TAG"             --pattern "manifest-*.json"             --dir release-manifests
+          gh release download "$TAG"             --pattern "upstream-metadata.json"             --dir .
+
+      - name: Inventory every release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.id')"
+          gh api --paginate             "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?per_page=100"             --jq '.[] | [.name, .size] | @tsv'             > release-assets.tsv
+          wc -l release-assets.tsv
+
+      - name: Verify full mirror against pinned upstream metadata
+        run: |
+          python scripts/verify_release_mirror.py             --upstream-metadata upstream-metadata.json             --assets-tsv release-assets.tsv             --manifests-dir release-manifests             --output MIRROR_STATUS.json
+
+      - name: Record verified completion on main
+        env:
+          REVISION: ${{ needs.prepare.outputs.revision }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          {
+            echo "# Qwen3.6-27B mirror complete"
+            echo
+            echo "Upstream: Qwen/Qwen3.6-27B"
+            echo
+            echo "Revision: $REVISION"
+            echo
+            echo "Release tag: $TAG"
+            echo
+            echo "The full upstream file set has been verified against the release manifests."
+          } > MIRROR_COMPLETE.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MIRROR_STATUS.json MIRROR_COMPLETE.md
+          git commit -m "Record complete verified Qwen3.6-27B mirror"
+          git pull --rebase origin main
+          git push origin HEAD:main
