@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-08-29T02:10:00Z",
+  "checked_at_utc": "2026-08-29T02:12:00Z",
   "official_source": {
     "repository": "QwenLM/Qwen3.8",
     "historical_name": "QwenLM/Qwen3.6",
@@ -19,8 +19,12 @@
       "transfer": "started"
     },
     "Qwen/Qwen3.6-27B-FP8": {
+      "revision": "e89b16ebf1988b3d6befa7de50abc2d76f26eb09",
+      "file_count": 30,
+      "safetensors_shards": 23,
+      "reported_bytes": 8759730640,
       "license": "Apache-2.0",
-      "transfer": "queued"
+      "transfer": "started"
     }
   }
 }
