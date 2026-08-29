@@ -1,0 +1,26 @@
+{
+  "checked_at_utc": "2026-08-29T02:10:00Z",
+  "official_source": {
+    "repository": "QwenLM/Qwen3.8",
+    "historical_name": "QwenLM/Qwen3.6",
+    "qwen36_27b_release_commit": "f1443092c29978643fd041ebe959676259e934f1",
+    "upstream_blob_count": 5,
+    "mirrored_blob_count": 5,
+    "missing": 0,
+    "sha_mismatch": 0
+  },
+  "models": {
+    "Qwen/Qwen3.6-27B": {
+      "revision": "6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+      "file_count": 29,
+      "safetensors_shards": 15,
+      "reported_bytes": 55586107940,
+      "license": "Apache-2.0",
+      "transfer": "started"
+    },
+    "Qwen/Qwen3.6-27B-FP8": {
+      "license": "Apache-2.0",
+      "transfer": "queued"
+    }
+  }
+}
