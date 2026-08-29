@@ -1,0 +1,2 @@
+https://github.com/QwenLM/Qwen3.8
+Former repository name at release lineage: QwenLM/Qwen3.6
